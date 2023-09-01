@@ -1,13 +1,28 @@
 from django import forms
 
 _field_attrs = ['placeholder']
+'''
+_field_attrs: a list of attributes of a field
+'''
+
 class_field_attrs = {
 					'Char_Field': ('CharField', 'TextInput',), 
 					'Integer_Field': ('IntegerField', 'NumberInput',),
 					'Email_Field': ('EmailField','EmailInput',)
 					}
+'''
+class_field_attrs:  a dictionary of fields and their django field and widget
+'''
 
 class FormField:
+	'''
+	This is the base class for a field
+	
+	@param field_name: the fields placeholder name or value
+	@param field: the field that is going to be created
+	@param label: label of the field
+	@param max_length: max lengeth of characters a field can take
+	'''
 	def __init__(self, field_name, field, label, max_length, widget,**kwargs):
 		self.field_name = field_name
 		self.field = field
