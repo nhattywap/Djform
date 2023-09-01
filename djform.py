@@ -17,6 +17,8 @@ class_field_attrs:  a dictionary of fields and their django field and widget
 class FormField:
 	'''
 	This is the base class for a field
+	On creation this class checks if any keyword argument is in _field_attrs list
+	if not removes the keyword and removes none value attributes from the object.
 	
 	@param field_name: the fields placeholder name or value
 	@param field: the field that is going to be created
@@ -46,9 +48,12 @@ class FormField:
 			self.field_attrs = {"placeholder": "%s" %(self.field_name.replace('_', ' ').title())}
 
 		self.delattr()
-		#print(self.__dict__)
+		
 
 	def __iter__(self):
+		'''
+		Iterets the class and  yields key and value of the classes dictionary items
+		'''
 		for k,v in self.__dict__.items():
 			yield k,v
 
@@ -84,6 +89,10 @@ class FormField:
 		return _max_length
 	
 class MetaFieldClass(type):
+	'''
+	This Meta class is used to restrict creation of field with default values 
+	that are listed in class_field_attrs but not the class. 
+	'''
 	def __new__(mcs, name, bases, attrs):
 		field = None
 		new_class = super(MetaFieldClass, mcs).__new__(mcs, name, bases, attrs)
@@ -97,6 +106,9 @@ class MetaFieldClass(type):
 		return new_class
 
 class Field(FormField, metaclass=MetaFieldClass): pass
+'''
+The is only to encapsulate the object base and meta classess
+'''
 
 class Char_Field(Field):
 
