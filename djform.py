@@ -91,7 +91,7 @@ class FormField:
 class MetaFieldClass(type):
 	'''
 	This Meta class is used to restrict creation of field with default values 
-	that are listed in class_field_attrs but not the class. 
+	that are listed in class_field_attrs but not the class.
 	'''
 	def __new__(mcs, name, bases, attrs):
 		field = None
@@ -111,7 +111,9 @@ The is only to encapsulate the object base and meta classess
 '''
 
 class Char_Field(Field):
-
+	'''
+	This is the caracter field with default values 
+	'''
 	def __init__(self, field_name, label=None, max_length=None, widget=None, **kwargs):
 		self.field = self._field
 		self.field_name = field_name
@@ -167,7 +169,7 @@ class Fill_Form_Field:
         for attr in attrs:
         	if isinstance(attr, str):
         		self.attrs.append(Char_Field(attr))
-        	if isinstance(attr, FormField):
+        	if isinstance(attr, Field):
         		self.attrs.append(attr)
 
     def fill(self):
