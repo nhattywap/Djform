@@ -1,17 +1,29 @@
+'''
+This program runs exec method to execute dynamically created program string.
+'''
 from django import forms
-
-_field_attrs = ['placeholder']
 '''
-_field_attrs: a list of attributes of a field
+This import is important for the program to run the exec sucessfully.
 '''
+def get_f_attrs():
+	_field_attrs = ['placeholder']
 
-class_field_attrs = {
-					'Char_Field': ('CharField', 'TextInput',), 
-					'Integer_Field': ('IntegerField', 'NumberInput',),
-					'Email_Field': ('EmailField','EmailInput',)
-					}
+	return _field_attrs
+'''
+_field_attrs: a list of attributes of a field.
+The function is only need to encapsulate _field_attrs.
+'''
+def get_field_attrs():
+	class_field_attrs = {
+						'Char_Field': ('CharField', 'TextInput',), 
+						'Integer_Field': ('IntegerField', 'NumberInput',),
+						'Email_Field': ('EmailField','EmailInput',),
+						'Pass_Field': ('CharField', 'PasswordInput'),
+						}
+	return class_field_attrs
 '''
 class_field_attrs:  a dictionary of fields and their django field and widget
+The function is only need to encapsulate class_field_attrs.
 '''
 
 class FormField:
@@ -39,7 +51,7 @@ class FormField:
 
 		if len(kwargs) > 0:
 			for attr_key, attr_value in kwargs.items():
-				if attr_key in _field_attrs:
+				if attr_key in get_f_attrs():
 					continue
 				else:
 					kwargs.pop(attr_key, None)
@@ -48,8 +60,7 @@ class FormField:
 			self.field_attrs = {"placeholder": "%s" %(self.field_name.replace('_', ' ').title())}
 
 		self.delattr()
-		
-
+	
 	def __iter__(self):
 		'''
 		Iterets the class and  yields key and value of the classes dictionary items
@@ -95,10 +106,11 @@ class MetaFieldClass(type):
 	'''
 	def __new__(mcs, name, bases, attrs):
 		field = None
+		field_attrs = get_field_attrs()
 		new_class = super(MetaFieldClass, mcs).__new__(mcs, name, bases, attrs)
 		for base in new_class.__mro__:
-			if base.__name__ in class_field_attrs:
-				field = class_field_attrs[base.__name__]
+			if base.__name__ in field_attrs:
+				field = field_attrs[base.__name__]
 
 		if field is not None:
 			new_class._field = field[0]
@@ -112,7 +124,7 @@ The is only to encapsulate the object base and meta classess
 
 class Char_Field(Field):
 	'''
-	This is the caracter field with default values 
+	This is the char field with default values 
 	'''
 	def __init__(self, field_name, label=None, max_length=None, widget=None, **kwargs):
 		self.field = self._field
@@ -122,6 +134,19 @@ class Char_Field(Field):
 		self.widget = self._widget_(self, widget)
 
 		super(Char_Field, self).__init__(self.field_name, self.field, self.label, self.max_length, self.widget, **kwargs)
+
+class Pass_Field(Field):
+	'''
+	This is the char field with default values 
+	'''
+	def __init__(self, field_name, label=None, max_length=None, widget=None, **kwargs):
+		self.field = self._field
+		self.field_name = field_name
+		self.label = self._label_(label)
+		self.max_length = self._max_length_(self, max_length)
+		self.widget = self._widget_(self, widget)
+
+		super(Pass_Field, self).__init__(self.field_name, self.field, self.label, self.max_length, self.widget, **kwargs)
 
 class Integer_Field(Field):
 
@@ -144,16 +169,20 @@ class Email_Field(Field):
 		self.max_length = self._max_length_(self, max_length)
 
 		super(Email_Field, self).__init__(self.field_name, self.field, self.label, self.max_length, self.widget, **kwargs)
+'''
+This is the factory it creates the dynamic code that is going to run
+'''
+class make_form_str_factory:
 
-class make_form_str:
     def __init__(self, c_name, attrs):
         self.c_name = c_name
         self.attrs = attrs
-        self.val = self.form(c_name, attrs)
+        self.val = self.form_factory(c_name, attrs)
 
-    def form(self, c_name, attrs):
+    def form_factory(self, c_name, attrs):
         vl_attrs = ''
         for attr in attrs:
+			
             if hasattr(attr, 'max_length'):
                 vl_attrs += '%s=forms.%s(label="%s", max_length=%d, widget=forms.%s(attrs=%s));' %(attr.field_name, attr.field, attr.label, attr.max_length, attr.widget, attr.field_attrs)
             else:
@@ -162,22 +191,34 @@ class make_form_str:
 
         return _val
 
+'''
+This class creates and fill Fields with attributes
+'''
 class Fill_Form_Field:
     def __init__(self, c_name, attrs):
         self.c_name = c_name
         self.attrs = []
-        for attr in attrs:
-        	if isinstance(attr, str):
-        		self.attrs.append(Char_Field(attr))
-        	if isinstance(attr, Field):
-        		self.attrs.append(attr)
+        if type(attrs) == str:
+            self.attrs.append(Char_Field(attrs))
+        else:
+            for attr in attrs:
+        	    if isinstance(attr, str):
+        		    self.attrs.append(Char_Field(attr))
+        	    if isinstance(attr, Field):
+        		    self.attrs.append(attr)
+				
 
     def fill(self):
-        mf = make_form_str(self.c_name, self.attrs)
+        mf = make_form_str_factory(self.c_name, self.attrs)
         return mf
     
 def exec_obj_as_global(obj):
 	e_run = obj.val+' global %s' %(obj.c_name)
 	exec(e_run)
 
-Global_Dict_Obj = globals()
+def forms_factory(c_name, attrs):
+	mf = Fill_Form_Field(c_name, attrs)
+	exec_obj_as_global(mf.fill())
+	Global_Dict_Obj = globals()
+
+	return Global_Dict_Obj[c_name]
